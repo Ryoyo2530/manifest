@@ -8,7 +8,7 @@
     "build": "npm run typecheck && npm run typecheck:worker && vite build",
     "preview": "vite preview",
     "typecheck": "tsc --noEmit",
-    "typecheck:worker": "tsc --noEmit --strict --target ES2022 --module ESNext --lib ES2022,WebWorker workers/api/index.ts"
+    "typecheck:worker": "tsc --noEmit -p workers/tsconfig.json"
   },
   "dependencies": {
     "react": "18.3.1",

@@ -27,18 +27,13 @@ const presences: Presence[] = ['environment', 'pov', 'self']
 
 function response(request: Request, env: Env, body: unknown, status = 200) {
   const origin = request.headers.get('Origin')
-  const allowedOrigin = origin === env.ALLOWED_ORIGIN ? origin : 'null'
-  return new Response(JSON.stringify(body), {
-    status,
-    headers: {
-      ...jsonHeaders,
-      'Access-Control-Allow-Origin': allowedOrigin,
-      'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-      'Access-Control-Allow-Headers': 'Authorization, Content-Type, Idempotency-Key',
-      'Vary': 'Origin',
-      'Cache-Control': 'no-store',
-    },
-  })
+  const headers = new Headers(jsonHeaders)
+  if (origin === env.ALLOWED_ORIGIN) headers.set('Access-Control-Allow-Origin', origin)
+  headers.set('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
+  headers.set('Access-Control-Allow-Headers', 'Authorization, Content-Type, Idempotency-Key')
+  headers.set('Vary', 'Origin')
+  headers.set('Cache-Control', 'no-store')
+  return new Response(JSON.stringify(body), { status, headers })
 }
 
 function bearer(request: Request) {
@@ -55,12 +50,13 @@ async function supabase<T>(
   const base = env.SUPABASE_URL.replace(/\/$/, '')
   const result = await fetch(`${base}/rest/v1/${path}`, {
     ...init,
-    headers: {
-      apikey: env.SUPABASE_ANON_KEY,
-      Authorization: `Bearer ${token}`,
-      'Content-Type': 'application/json',
-      ...(init.headers || {}),
-    },
+    headers: (() => {
+      const headers = new Headers(init.headers)
+      headers.set('apikey', env.SUPABASE_ANON_KEY)
+      headers.set('Authorization', `Bearer ${token}`)
+      headers.set('Content-Type', 'application/json')
+      return headers
+    })(),
   })
   const data = await result.json().catch(() => null) as T | null
   return { ok: result.ok, status: result.status, data }
@@ -100,10 +96,11 @@ function validBody(value: unknown): value is CreateGenerationBody {
 
 async function handle(request: Request, env: Env): Promise<Response> {
   if (request.method === 'OPTIONS') {
+    if (request.headers.get('Origin') !== env.ALLOWED_ORIGIN) return new Response(null, { status: 403 })
     return new Response(null, {
       status: 204,
       headers: {
-        'Access-Control-Allow-Origin': request.headers.get('Origin') === env.ALLOWED_ORIGIN ? env.ALLOWED_ORIGIN : 'null',
+        'Access-Control-Allow-Origin': env.ALLOWED_ORIGIN,
         'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
         'Access-Control-Allow-Headers': 'Authorization, Content-Type, Idempotency-Key',
         'Vary': 'Origin',
@@ -119,6 +116,8 @@ async function handle(request: Request, env: Env): Promise<Response> {
   if (!user) return response(request, env, { error: 'unauthorized', message: 'Your session is invalid or expired.' }, 401)
 
   if (request.method === 'POST' && url.pathname === '/api/generations') {
+    const contentLength = Number(request.headers.get('Content-Length') || 0)
+    if (contentLength > 65536) return response(request, env, { error: 'payload_too_large', message: 'Generation input exceeds the 64 KB limit.' }, 413)
     let body: unknown
     try {
       body = await request.json()
@@ -164,7 +163,7 @@ async function handle(request: Request, env: Env): Promise<Response> {
     // A repeated idempotency key returns the original task rather than creating a duplicate.
     if (created.status === 409 || (created.ok && !created.data?.length)) {
       const existing = await supabase<Record<string, unknown>[]>(env,
-        `generations? idempotency_key=eq.${encodeURIComponent(body.idempotency_key)}&select=*&limit=1`.replace('? ', '?'), token)
+        `generations?idempotency_key=eq.${encodeURIComponent(body.idempotency_key)}&select=*&limit=1`, token)
       if (existing.ok && existing.data?.[0]) {
         return response(request, env, { generation: existing.data[0], accepted: true, reused: true }, 200)
       }
