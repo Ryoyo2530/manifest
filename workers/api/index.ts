@@ -1,8 +1,22 @@
+import { buildImagePrompt, generateOpenRouterImage } from './providers/openrouter'
+
 export interface Env {
   SUPABASE_URL: string
   SUPABASE_ANON_KEY: string
   ALLOWED_ORIGIN: string
+  OPENROUTER_API_KEY: string
+  OPENROUTER_IMAGE_MODEL?: string
+  MEDIA_BUCKET: MediaBucket
+  GENERATION_QUEUE: GenerationQueue
 }
+
+interface MediaBucket {
+  put(key: string, value: ArrayBuffer, options?: { httpMetadata?: { contentType?: string } }): Promise<unknown>
+  get(key: string): Promise<{ body: ReadableStream; httpMetadata?: { contentType?: string } } | null>
+}
+interface GenerationQueue { send(body: unknown): Promise<void> }
+interface QueueMessage<T> { body: T; ack(): void }
+interface QueueBatch<T> { messages: QueueMessage<T>[] }
 
 type OutputType = 'video' | 'image' | 'audio'
 type Style = 'Cinematic' | 'Dreamy' | 'Luxury' | 'Romantic' | 'Ethereal'
@@ -104,6 +118,32 @@ function validWish(value: unknown): value is CreateWishBody {
     && categories.includes(value.category as string)
 }
 
+async function updateGeneration(env: Env, token: string, id: string, patch: Record<string, unknown>) {
+  return supabase<unknown>(env, 'generations?id=eq.' + encodeURIComponent(id), token, {
+    method: 'PATCH', headers: { Prefer: 'return=minimal' }, body: JSON.stringify(patch),
+  })
+}
+
+async function runImageGeneration(env: Env, token: string, userId: string, generationId: string, brief: Record<string, unknown>) {
+  try {
+    const model = env.OPENROUTER_IMAGE_MODEL || 'bytedance-seed/seedream-4.5'
+    const generated = await generateOpenRouterImage(env.OPENROUTER_API_KEY, model, buildImagePrompt(brief), env.ALLOWED_ORIGIN)
+    const extension = generated.mimeType === 'image/jpeg' ? 'jpg' : generated.mimeType === 'image/webp' ? 'webp' : 'png'
+    const storageKey = 'users/' + userId + '/generations/' + generationId + '/original.' + extension
+    await env.MEDIA_BUCKET.put(storageKey, generated.bytes, { httpMetadata: { contentType: generated.mimeType } })
+    const asset = await supabase<Record<string, unknown>[]>(env, 'media_assets?select=id', token, {
+      method: 'POST', headers: { Prefer: 'return=representation' },
+      body: JSON.stringify({ user_id: userId, generation_id: generationId, asset_type: 'image', storage_key: storageKey, mime_type: generated.mimeType, file_size_bytes: generated.bytes.byteLength }),
+    })
+    if (!asset.ok) throw new Error('The image was generated but its media record could not be saved.')
+    const updated = await updateGeneration(env, token, generationId, { status: 'completed', provider: 'openrouter', completed_at: new Date().toISOString() })
+    if (!updated.ok) throw new Error('The image was stored but the generation status could not be updated.')
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Image generation failed.'
+    await updateGeneration(env, token, generationId, { status: 'failed', provider: 'openrouter', error_code: 'provider_error', error_message: message.slice(0, 1000), completed_at: new Date().toISOString() })
+  }
+}
+
 async function handle(request: Request, env: Env): Promise<Response> {
   if (request.method === 'OPTIONS') {
     if (request.headers.get('Origin') !== env.ALLOWED_ORIGIN) return new Response(null, { status: 403 })
@@ -124,6 +164,19 @@ async function handle(request: Request, env: Env): Promise<Response> {
 
   const user = await authenticate(env, token)
   if (!user) return response(request, env, { error: 'unauthorized', message: 'Your session is invalid or expired.' }, 401)
+  const mediaMatch = url.pathname.match(/^\/api\/generations\/([0-9a-f-]{36})\/media$/i)
+  if (request.method === 'GET' && mediaMatch) {
+    const generation = await supabase<{ id: string }[]>(env, 'generations?id=eq.' + encodeURIComponent(mediaMatch[1]) + '&select=id&limit=1', token)
+    if (!generation.ok || !generation.data?.length) return response(request, env, { error: 'generation_not_found', message: 'This generation does not exist in your space.' }, 404)
+    const assets = await supabase<{ storage_key: string; mime_type: string }[]>(env, 'media_assets?generation_id=eq.' + encodeURIComponent(mediaMatch[1]) + '&asset_type=eq.image&select=storage_key,mime_type&limit=1', token)
+    if (!assets.ok || !assets.data?.[0]) return response(request, env, { error: 'media_not_found', message: 'The image is not ready yet.' }, 404)
+    const object = await env.MEDIA_BUCKET.get(assets.data[0].storage_key)
+    if (!object) return response(request, env, { error: 'media_not_found', message: 'The image file is unavailable.' }, 404)
+    const mediaHeaders = new Headers({ 'Content-Type': object.httpMetadata?.contentType || assets.data[0].mime_type, 'Cache-Control': 'private, max-age=300', 'Vary': 'Origin, Authorization' })
+    const origin = request.headers.get('Origin')
+    if (origin === env.ALLOWED_ORIGIN) mediaHeaders.set('Access-Control-Allow-Origin', origin)
+    return new Response(object.body, { headers: mediaHeaders })
+  }
 
   if (request.method === 'GET' && url.pathname === '/api/space') {
     const [wishes, generations, favorites] = await Promise.all([
@@ -195,6 +248,8 @@ async function handle(request: Request, env: Env): Promise<Response> {
     if (!validBody(body)) {
       return response(request, env, { error: 'invalid_request', message: 'Generation input is incomplete or invalid.' }, 400)
     }
+    if (body.output_type !== 'image') return response(request, env, { error: 'modality_not_enabled', message: 'Video and audio generation are not enabled yet.' }, 501)
+    if (!env.OPENROUTER_API_KEY) return response(request, env, { error: 'provider_not_configured', message: 'Image generation is not configured yet.' }, 503)
 
     const wish = await supabase<{ id: string }[]>(env,
       `wishes?id=eq.${encodeURIComponent(body.wish_id)}&select=id&limit=1`, token)
@@ -207,6 +262,8 @@ async function handle(request: Request, env: Env): Promise<Response> {
       style: body.style,
       mood: body.mood,
       presence: body.presence,
+      provider: 'openrouter',
+      model: env.OPENROUTER_IMAGE_MODEL || 'bytedance-seed/seedream-4.5',
     }
     const created = await supabase<Record<string, unknown>[]>(env, 'generations?select=*', token, {
       method: 'POST',
@@ -215,7 +272,8 @@ async function handle(request: Request, env: Env): Promise<Response> {
         user_id: user.id,
         wish_id: body.wish_id,
         output_type: body.output_type,
-        status: 'pending',
+        status: 'processing',
+        provider: 'openrouter',
         style: body.style,
         mood: body.mood,
         presence: body.presence,
@@ -226,6 +284,12 @@ async function handle(request: Request, env: Env): Promise<Response> {
     })
 
     if (created.ok && created.data?.[0]) {
+      try {
+        await env.GENERATION_QUEUE.send({ userId: user.id, accessToken: token, generationId: String(created.data[0].id), brief: body.creative_brief })
+      } catch {
+        await updateGeneration(env, token, String(created.data[0].id), { status: 'failed', error_code: 'queue_unavailable', error_message: 'The generation queue is temporarily unavailable.' })
+        return response(request, env, { error: 'queue_unavailable', message: 'The image could not be queued. Please try again.' }, 503)
+      }
       return response(request, env, { generation: created.data[0], accepted: true }, 202)
     }
 
@@ -256,5 +320,12 @@ async function handle(request: Request, env: Env): Promise<Response> {
 export default {
   fetch(request: Request, env: Env): Promise<Response> {
     return handle(request, env)
+  },
+  async queue(batch: QueueBatch<{ userId: string; accessToken: string; generationId: string; brief: Record<string, unknown> }>, env: Env): Promise<void> {
+    for (const message of batch.messages) {
+      const job = message.body
+      await runImageGeneration(env, job.accessToken, job.userId, job.generationId, job.brief)
+      message.ack()
+    }
   },
 }

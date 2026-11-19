@@ -45,7 +45,7 @@ export function Compose() {
   const [style, setStyle] = useState<Style>('Dreamy')
   const [mood, setMood] = useState<Mood>('Peaceful')
   const [presence, setPresence] = useState<Presence>('environment')
-  const [outputType, setOutputType] = useState<OutputType>('video')
+  const [outputType, setOutputType] = useState<OutputType>('image')
   const [error, setError] = useState('')
 
   const suggestion = useMemo(
@@ -218,12 +218,13 @@ export function Compose() {
               <button
                 key={item.id}
                 type="button"
+                disabled={item.id !== 'image'}
                 onClick={() => setOutputType(item.id)}
                 data-on={item.id === outputType}
                 className="rounded-2xl border border-champagne px-4 py-4 text-left data-[on=true]:border-gold data-[on=true]:bg-champagne/40"
               >
                 <span className="block font-serif text-2xl text-plum">{item.label}</span>
-                <span className="mt-1 block text-sm text-ink/65">{item.hint}</span>
+                <span className="mt-1 block text-sm text-ink/65">{item.id === 'image' ? item.hint : 'Coming soon'}</span>
               </button>
             ))}
           </div>

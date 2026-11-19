@@ -47,6 +47,17 @@ export async function deleteRemoteWish(session: AuthSession, id: string) {
 export async function setRemoteFavorite(session: AuthSession, id: string, favorite: boolean) {
   await apiRequest<{ favorite: boolean }>(session, `/api/favorites/${id}`, { method: favorite ? 'POST' : 'DELETE' })
 }
+export async function refreshRemoteGeneration(session: AuthSession, id: string) {
+  return (await apiRequest<{ generation: { id: string; status: Generation['status']; error_message?: string | null } }>(session, `/api/generations/${id}`)).generation
+}
+
+export async function fetchRemoteGenerationImage(session: AuthSession, id: string) {
+  const response = await fetch(`${requireApiUrl()}/api/generations/${id}/media`, {
+    headers: { Authorization: `Bearer ${session.access_token}` },
+  })
+  if (!response.ok) throw new Error('The generated image is not ready yet.')
+  return URL.createObjectURL(await response.blob())
+}
 export async function createRemoteGeneration(session: AuthSession, input: { wishId: string; outputType: OutputType; style: Style; mood: Mood; presence: Presence; creativeBrief: CreativeBrief }) {
   const key = crypto.randomUUID()
   const result = await apiRequest<{ generation: { id: string; wish_id: string; status: Generation['status'] } }>(session, '/api/generations', { method: 'POST', headers: { 'Idempotency-Key': key }, body: JSON.stringify({ wish_id: input.wishId, output_type: input.outputType, style: input.style, mood: input.mood, presence: input.presence, creative_brief: input.creativeBrief, idempotency_key: key }) })
