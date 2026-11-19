@@ -172,7 +172,10 @@ async function handle(request: Request, env: Env): Promise<Response> {
     if (!assets.ok || !assets.data?.[0]) return response(request, env, { error: 'media_not_found', message: 'The image is not ready yet.' }, 404)
     const object = await env.MEDIA_BUCKET.get(assets.data[0].storage_key)
     if (!object) return response(request, env, { error: 'media_not_found', message: 'The image file is unavailable.' }, 404)
-    return new Response(object.body, { headers: { 'Content-Type': object.httpMetadata?.contentType || assets.data[0].mime_type, 'Cache-Control': 'private, max-age=300', 'Vary': 'Authorization' } })
+    const mediaHeaders = new Headers({ 'Content-Type': object.httpMetadata?.contentType || assets.data[0].mime_type, 'Cache-Control': 'private, max-age=300', 'Vary': 'Origin, Authorization' })
+    const origin = request.headers.get('Origin')
+    if (origin === env.ALLOWED_ORIGIN) mediaHeaders.set('Access-Control-Allow-Origin', origin)
+    return new Response(object.body, { headers: mediaHeaders })
   }
 
   if (request.method === 'GET' && url.pathname === '/api/space') {
@@ -259,6 +262,8 @@ async function handle(request: Request, env: Env): Promise<Response> {
       style: body.style,
       mood: body.mood,
       presence: body.presence,
+      provider: 'openrouter',
+      model: env.OPENROUTER_IMAGE_MODEL || 'bytedance-seed/seedream-4.5',
     }
     const created = await supabase<Record<string, unknown>[]>(env, 'generations?select=*', token, {
       method: 'POST',
