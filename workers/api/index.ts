@@ -136,7 +136,7 @@ async function handle(request: Request, env: Env): Promise<Response> {
     const created = await supabase<Record<string, unknown>[]>(env, 'wishes?select=*', token, {
       method: 'POST',
       headers: { Prefer: 'return=representation' },
-      body: JSON.stringify({ title: body.title.trim(), description: body.description.trim(), category: body.category, status: 'active' }),
+      body: JSON.stringify({ user_id: user.id, title: body.title.trim(), description: body.description.trim(), category: body.category, status: 'active' }),
     })
     if (!created.ok || !created.data?.[0]) return response(request, env, { error: 'wish_create_failed', message: 'The Wish could not be saved.' }, created.status >= 400 ? created.status : 502)
     return response(request, env, { wish: created.data[0] }, 201)
@@ -171,6 +171,7 @@ async function handle(request: Request, env: Env): Promise<Response> {
       method: 'POST',
       headers: { Prefer: 'return=representation' },
       body: JSON.stringify({
+        user_id: user.id,
         wish_id: body.wish_id,
         output_type: body.output_type,
         status: 'pending',
