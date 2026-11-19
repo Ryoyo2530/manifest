@@ -11,7 +11,7 @@
 import type { CreativeBrief } from './creative/types'
 
 export const categories = [
-  'Love & Connection',
+  'Love & Relationships',
   'Career & Abundance',
   'Wellbeing & Growth',
   'Lifestyle & Adventure',
@@ -108,12 +108,12 @@ export const examples: { title: string; description: string; category: Category 
   {
     title: 'A love that understands',
     description: 'I want to meet someone who truly loves and understands me.',
-    category: 'Love & Connection',
+    category: 'Love & Relationships',
   },
 ]
 
 const palettes: Record<Category, Palette> = {
-  'Love & Connection': { a: '#F6E4E0', b: '#E8C4C2', c: '#C6A15B', ink: '#463344' },
+  'Love & Relationships': { a: '#F6E4E0', b: '#E8C4C2', c: '#C6A15B', ink: '#463344' },
   'Career & Abundance': { a: '#F3E6C8', b: '#C6A15B', c: '#5C4454', ink: '#463344' },
   'Wellbeing & Growth': { a: '#F7F1E8', b: '#E4D8C4', c: '#C5B9D9', ink: '#382F35' },
   'Lifestyle & Adventure': { a: '#D9D0E8', b: '#C5B9D9', c: '#E9D9B5', ink: '#2C2430' },
@@ -121,7 +121,7 @@ const palettes: Record<Category, Palette> = {
 }
 
 const scenes: Record<Category, string> = {
-  'Love & Connection': 'A shared quiet moment: two cups on a windowsill, a street just after rain, and nowhere else to be.',
+  'Love & Relationships': 'A shared quiet moment: two cups on a windowsill, a street just after rain, and nowhere else to be.',
   'Career & Abundance': 'A beautiful, considered space with room to create, contribute, and live with ease.',
   'Wellbeing & Growth': 'Morning light on linen. A glass of water. The body easy in its own rhythm.',
   'Lifestyle & Adventure': 'An open horizon: a home or destination that feels unmistakably yours.',
@@ -129,7 +129,7 @@ const scenes: Record<Category, string> = {
 }
 
 const atmospheres: Record<Category, string> = {
-  'Love & Connection': 'Blush, candle warmth, the feeling of being seen and chosen.',
+  'Love & Relationships': 'Blush, candle warmth, the feeling of being seen and chosen.',
   'Career & Abundance': 'Champagne gold, deep plum, and a sense of possibility without hurry.',
   'Wellbeing & Growth': 'Ivory and pale light. Breath, self-trust, and enough stillness.',
   'Lifestyle & Adventure': 'Lavender dusk, warm ivory, and an open horizon.',
@@ -137,7 +137,7 @@ const atmospheres: Record<Category, string> = {
 }
 
 const affirmations: Record<Category, string> = {
-  'Love & Connection': 'I am worthy of connection that feels safe, genuine, and beautiful.',
+  'Love & Relationships': 'I am worthy of a relationship that feels safe, genuine, and beautiful.',
   'Career & Abundance': 'I move toward meaningful work and a life with room to flourish.',
   'Wellbeing & Growth': 'I am becoming someone I can trust, one true day at a time.',
   'Lifestyle & Adventure': 'I am open to a life that feels expansive, meaningful, and my own.',
@@ -153,7 +153,7 @@ const styleLine:const styleLine: Record<Style, string> = {
 }
 
 const defaultTitles: Record<Category, string> = {
-  'Love & Connection': 'A love that feels like home',
+  'Love & Relationships': 'A love that feels like home',
   'Career & Abundance': 'A life of possibility',
   'Wellbeing & Growth': 'Becoming more myself',
   'Lifestyle & Adventure': 'The life I keep imagining',
@@ -161,7 +161,7 @@ const defaultTitles: Record<Category, string> = {
 }
 
 const categoryHints: [RegExp, Category][] = [
-  [/love|relationship|partner|husband|wife|soulmate|marry|connection/i, 'Love & Connection'],
+  [/love|relationship|partner|husband|wife|soulmate|marry|connection/i, 'Love & Relationships'],
   [/career|job|business|success|successful|work|money|wealth|financial|abundant|income|luxury|luxurious/i, 'Career & Abundance'],
   [/health|healthy|energy|body|calm|peace|heal|confident|confidence|grow|growth|become|myself|self-love|self love/i, 'Wellbeing & Growth'],
   [/travel|journey|abroad|around the world|flight|paris|apartment|lifestyle|live in|adventure/i, 'Lifestyle & Adventure'],
@@ -178,25 +178,6 @@ export function lineForToday() {
   const start = new Date(new Date().getFullYear(), 0, 0).getTime()
   const day = Math.floor((Date.now() - start) / 86_400_000)
   return dayLines[day % dayLines.length]
-}
-
-export function normalizeCategory(value: string): Category {
-  if (categories.includes(value as Category)) return value as Category
-  switch (value) {
-    case 'Wealth & Abundance':
-    case 'Career & Success':
-      return 'Career & Abundance'
-    case 'Love & Relationships':
-      return 'Love & Connection'
-    case 'Health & Wellbeing':
-    case 'Self-Growth':
-      return 'Wellbeing & Growth'
-    case 'Dream Lifestyle':
-    case 'Travel & Adventure':
-      return 'Lifestyle & Adventure'
-    default:
-      return 'Other'
-  }
 }
 
 export function guessCategory(description: string): Category {
