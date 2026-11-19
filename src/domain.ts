@@ -8,6 +8,8 @@
  * Daily Manifest can later follow a wish. No extra fields until that ritual exists.
  */
 
+import type { CreativeBrief } from './creative/types'
+
 export const categories = [
   'Wealth & Abundance',
   'Love & Relationships',
@@ -80,6 +82,8 @@ export type Generation = {
   mood: Mood
   presence: Presence
   concept: Concept
+  /** Versioned, provider-neutral interpretation captured when this generation was created. */
+  creativeBrief?: CreativeBrief
   favorite: boolean
   createdAt: string
   completedAt?: string
