@@ -9,7 +9,6 @@ import {
 } from 'react'
 import {
   interpret,
-  normalizeCategory,
   uid,
   type Category,
   type Generation,
@@ -93,7 +92,7 @@ function read(): Space {
     }
     return {
       profile: { ...base.profile, ...parsed.profile },
-      wishes: parsed.wishes.map((wish) => ({ ...wish, category: normalizeCategory(String(wish.category ?? 'Other')) })),
+      wishes: parsed.wishes,
       generations: parsed.generations,
     }
   } catch {
