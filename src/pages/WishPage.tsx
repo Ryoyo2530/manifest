@@ -12,7 +12,9 @@ export function WishPage() {
   const wish = space.wishes.find((item) => item.id === id)
   const pieces = space.generations.filter((item) => item.wishId === id)
   const [editing, setEditing] = useState(false)
-  const [confirming, setConfirming] = useState(false)\n  const [saving, setSaving] = useState(false)\n  const [error, setError] = useState('')
+  const [confirming, setConfirming] = useState(false)
+  const [saving, setSaving] = useState(false)
+  const [error, setError] = useState('')
   const [title, setTitle] = useState(wish?.title ?? '')
   const [description, setDescription] = useState(wish?.description ?? '')
   const [category, setCategory] = useState<Category>(wish?.category ?? 'Other')
@@ -119,7 +121,9 @@ export function WishPage() {
         Another vision
       </Link>
 
-      {error && <p role="alert" className="mt-4 text-sm text-red-700">{error}</p>}\n\n      <section className="mt-14">
+      {error && <p role="alert" className="mt-4 text-sm text-red-700">{error}</p>}
+
+      <section className="mt-14">
         {pieces.length === 0 ? (
           <p className="font-serif text-2xl italic text-ink/60">No visions yet.</p>
         ) : (

@@ -111,7 +111,7 @@ async function handle(request: Request, env: Env): Promise<Response> {
       status: 204,
       headers: {
         'Access-Control-Allow-Origin': env.ALLOWED_ORIGIN,
-        'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+        'Access-Control-Allow-Methods': 'GET, POST, PATCH, DELETE, OPTIONS',
         'Access-Control-Allow-Headers': 'Authorization, Content-Type, Idempotency-Key',
         'Vary': 'Origin',
       },

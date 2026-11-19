@@ -12,7 +12,8 @@ export function Result() {
   const generation = space.generations.find((item) => item.id === id)
   const wish = space.wishes.find((item) => item.id === generation?.wishId)
   const [revealed, setRevealed] = useState(false)
-  const [note, setNote] = useState('')\n  const [favoriteBusy, setFavoriteBusy] = useState(false)
+  const [note, setNote] = useState('')
+  const [favoriteBusy, setFavoriteBusy] = useState(false)
 
   useEffect(() => {
     if (generation?.status === 'processing') {
