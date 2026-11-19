@@ -11,13 +11,10 @@
 import type { CreativeBrief } from './creative/types'
 
 export const categories = [
-  'Wealth & Abundance',
   'Love & Relationships',
-  'Career & Success',
-  'Health & Wellbeing',
-  'Dream Lifestyle',
-  'Travel & Adventure',
-  'Self-Growth',
+  'Career & Abundance',
+  'Wellbeing & Growth',
+  'Lifestyle & Adventure',
   'Other',
 ] as const
 
@@ -101,12 +98,12 @@ export const examples: { title: string; description: string; category: Category 
     title: 'A quiet life in Paris',
     description:
       'I want to live in a beautiful apartment in Paris, with a peaceful and luxurious life.',
-    category: 'Dream Lifestyle',
+    category: 'Lifestyle & Adventure',
   },
   {
     title: 'Financially free',
     description: 'I want to become financially independent and live with a sense of ease.',
-    category: 'Wealth & Abundance',
+    category: 'Career & Abundance',
   },
   {
     title: 'A love that understands',
@@ -116,53 +113,34 @@ export const examples: { title: string; description: string; category: Category 
 ]
 
 const palettes: Record<Category, Palette> = {
-  'Wealth & Abundance': { a: '#F3E6C8', b: '#C6A15B', c: '#E7C9B4', ink: '#463344' },
   'Love & Relationships': { a: '#F6E4E0', b: '#E8C4C2', c: '#C6A15B', ink: '#463344' },
-  'Career & Success': { a: '#5C4454', b: '#463344', c: '#C6A15B', ink: '#F7F1E8' },
-  'Health & Wellbeing': { a: '#F7F1E8', b: '#E4D8C4', c: '#C5B9D9', ink: '#382F35' },
-  'Dream Lifestyle': { a: '#F6E7EA', b: '#E8C4C2', c: '#C5B9D9', ink: '#463344' },
-  'Travel & Adventure': { a: '#D9D0E8', b: '#8E82A8', c: '#E9D9B5', ink: '#2C2430' },
-  'Self-Growth': { a: '#E7E0F0', b: '#C5B9D9', c: '#E9D9B5', ink: '#382F35' },
+  'Career & Abundance': { a: '#F3E6C8', b: '#C6A15B', c: '#5C4454', ink: '#463344' },
+  'Wellbeing & Growth': { a: '#F7F1E8', b: '#E4D8C4', c: '#C5B9D9', ink: '#382F35' },
+  'Lifestyle & Adventure': { a: '#D9D0E8', b: '#C5B9D9', c: '#E9D9B5', ink: '#2C2430' },
   Other: { a: '#F7F1E8', b: '#E9D9B5', c: '#E8C4C2', ink: '#382F35' },
 }
 
 const scenes: Record<Category, string> = {
-  'Wealth & Abundance':
-    'A quiet room of warm stone and late light. A table set for no one in particular, the city soft beyond the glass.',
-  'Love & Relationships':
-    'Two cups on a windowsill. A street just after rain. A hand resting near another, with nowhere else to be.',
-  'Career & Success':
-    'A long table, papers in a beautiful order, and a window onto work that actually matters.',
-  'Health & Wellbeing':
-    'Morning light on linen. A glass of water. The body easy in its own rhythm.',
-  'Dream Lifestyle':
-    'An apartment above a city you love. Curtains lifting. The afternoon entirely yours.',
-  'Travel & Adventure':
-    'A train window, an unfamiliar coast, a bag light enough to say yes.',
-  'Self-Growth':
-    'A mirror in kind light. A journal left open. The self arriving without being asked to hurry.',
+  'Love & Relationships': 'A shared quiet moment: two cups on a windowsill, a street just after rain, and nowhere else to be.',
+  'Career & Abundance': 'A beautiful, considered space with room to create, contribute, and live with ease.',
+  'Wellbeing & Growth': 'Morning light on linen. A glass of water. The body easy in its own rhythm.',
+  'Lifestyle & Adventure': 'An open horizon: a home or destination that feels unmistakably yours.',
   Other: 'A softly lit threshold, with room enough for whatever you are wishing toward.',
 }
 
 const atmospheres: Record<Category, string> = {
-  'Wealth & Abundance': 'Champagne gold, pearl highlights, wealth that does not rush.',
-  'Love & Relationships': 'Blush, candle warmth, the feeling of being chosen.',
-  'Career & Success': 'Deep plum and gold. Poised, clear, luminous.',
-  'Health & Wellbeing': 'Ivory and pale light. Breath, and enough stillness.',
-  'Dream Lifestyle': 'Ivory, blush, and a thin line of gold.',
-  'Travel & Adventure': 'Lavender dusk, salt air, an open horizon.',
-  'Self-Growth': 'Soft lavender, warm ivory, a halo of quiet confidence.',
+  'Love & Relationships': 'Blush, candle warmth, the feeling of being seen and chosen.',
+  'Career & Abundance': 'Champagne gold, deep plum, and a sense of possibility without hurry.',
+  'Wellbeing & Growth': 'Ivory and pale light. Breath, self-trust, and enough stillness.',
+  'Lifestyle & Adventure': 'Lavender dusk, warm ivory, and an open horizon.',
   Other: 'Champagne and dusk, held open.',
 }
 
 const affirmations: Record<Category, string> = {
-  'Wealth & Abundance': 'I am at home in a life of ease, plenty, and open possibility.',
-  'Love & Relationships': 'I am worthy of a love that feels safe, genuine, and beautiful.',
-  'Career & Success': 'I move through my work with clarity, courage, and quiet authority.',
-  'Health & Wellbeing': 'I am well. I am steady. My days have room to breathe.',
-  'Dream Lifestyle': 'The life I imagine is already taking its place around me.',
-  'Travel & Adventure': 'I am free to go, and free to be changed by what I find.',
-  'Self-Growth': 'I am becoming someone I can trust, one true day at a time.',
+  'Love & Relationships': 'I am worthy of a relationship that feels safe, genuine, and beautiful.',
+  'Career & Abundance': 'I move toward meaningful work and a life with room to flourish.',
+  'Wellbeing & Growth': 'I am becoming someone I can trust, one true day at a time.',
+  'Lifestyle & Adventure': 'I am open to a life that feels expansive, meaningful, and my own.',
   Other: 'What I long for has a place here, and so do I.',
 }
 
@@ -175,24 +153,18 @@ const styleLine: Record<Style, string> = {
 }
 
 const defaultTitles: Record<Category, string> = {
-  'Wealth & Abundance': 'A life of abundance',
   'Love & Relationships': 'A love that feels like home',
-  'Career & Success': 'Work that becomes a life',
-  'Health & Wellbeing': 'A body at ease',
-  'Dream Lifestyle': 'The life I keep imagining',
-  'Travel & Adventure': 'An open horizon',
-  'Self-Growth': 'Becoming myself',
+  'Career & Abundance': 'A life of possibility',
+  'Wellbeing & Growth': 'Becoming more myself',
+  'Lifestyle & Adventure': 'The life I keep imagining',
   Other: 'What I am wishing for',
 }
 
 const categoryHints: [RegExp, Category][] = [
-  [/love|relationship|partner|husband|wife|soulmate|marry/i, 'Love & Relationships'],
-  [/travel|journey|abroad|around the world|flight/i, 'Travel & Adventure'],
-  [/paris|apartment|lifestyle|live in/i, 'Dream Lifestyle'],
-  [/health|healthy|energy|body|calm|peace|heal/i, 'Health & Wellbeing'],
-  [/money|wealth|financial|abundant|income|luxury|luxurious/i, 'Wealth & Abundance'],
-  [/confident|confidence|grow|growth|become|myself|self-love|self love/i, 'Self-Growth'],
-  [/career|job|business|success|successful|work/i, 'Career & Success'],
+  [/love|relationship|partner|husband|wife|soulmate|marry|connection/i, 'Love & Relationships'],
+  [/career|job|business|success|successful|work|money|wealth|financial|abundant|income|luxury|luxurious/i, 'Career & Abundance'],
+  [/health|healthy|energy|body|calm|peace|heal|confident|confidence|grow|growth|become|myself|self-love|self love/i, 'Wellbeing & Growth'],
+  [/travel|journey|abroad|around the world|flight|paris|apartment|lifestyle|live in|adventure/i, 'Lifestyle & Adventure'],
 ]
 
 const dayLines = [
