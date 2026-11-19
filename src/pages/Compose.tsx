@@ -267,7 +267,7 @@ export function Compose() {
           )}
           {error && <p className="text-sm text-plum">{error}</p>}
           <button className="btn" type="submit" disabled={store.remaining === 0 || busy}>
-            Bring It to Life
+            {busy ? 'Holding your wish…' : 'Bring It to Life'}
           </button>
         </div>
       </form>

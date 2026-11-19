@@ -175,10 +175,10 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       }
       const now = new Date().toISOString()
       const generation: Generation = {
-        id: uid(),
+        id: remote?.generationId ?? uid(),
         wishId: wish.id,
         outputType: input.outputType,
-        status: 'processing',
+        status: remote?.status ?? (remote ? 'pending' : 'processing'),
         style: input.style,
         mood: input.mood,
         presence: input.presence,
