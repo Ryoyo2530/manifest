@@ -4,10 +4,10 @@ import { Halo } from '../components/Halo'
 import { useStore } from '../store'
 
 const lines = [
-  'Your wish is taking shape…',
-  'Creating your personal manifestation…',
-  'Bringing your vision to life…',
-  'Almost ready…',
+  'Reading the wish beneath your words…',
+  'Finding the feeling you want to return to…',
+  'Shaping a visual direction around your wish…',
+  'Your concept is ready…',
 ]
 
 export function Ritual() {
@@ -56,7 +56,7 @@ export function Ritual() {
     return (
       <div className="flex min-h-screen flex-col items-center justify-center px-6 text-center">
         <p className="max-w-md font-serif text-4xl leading-tight text-plum">
-          This vision didn’t come through. The wish is still here.
+          This concept didn’t come through. The wish is still here.
         </p>
         <Link to={`/wishes/${generation.wishId}`} className="btn mt-8">
           Return to the wish
@@ -72,8 +72,13 @@ export function Ritual() {
         <div className="absolute bottom-10 right-10 h-56 w-56 rounded-full bg-lavender/50 blur-3xl" />
       </div>
       <Halo className="drift relative h-56 w-56 text-gold/80" />
-      <p className="rise relative mt-10 max-w-md font-serif text-3xl italic leading-snug text-plum md:text-4xl" aria-live="polite">
+      <p className="kicker relative mt-10">Concept preview</p>
+      <p className="rise relative mt-4 max-w-md font-serif text-3xl italic leading-snug text-plum md:text-4xl" aria-live="polite">
         {lines[line]}
+      </p>
+      <p className="relative mt-5 max-w-sm text-sm leading-relaxed text-ink/60">
+        We’re shaping the creative direction for your wish. Your finished image, video, or audio
+        will appear here once generation is connected.
       </p>
     </div>
   )
