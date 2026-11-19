@@ -1,5 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
 import {
+  clearStoredSession,
   isSupabaseConfigured,
   readSession,
   refreshSession,
@@ -42,6 +43,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           const refreshed = await refreshSession(stored)
           if (active) setSession(refreshed)
         } catch {
+          clearStoredSession()
           if (active) setSession(null)
         }
       }
@@ -58,6 +60,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       try {
         setSession(await refreshSession(session))
       } catch {
+        clearStoredSession()
         setSession(null)
       }
     }, delay)

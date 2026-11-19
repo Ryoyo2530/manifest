@@ -28,10 +28,14 @@ function requireConfig() {
   return { url: supabaseUrl, key: supabaseAnonKey }
 }
 
+export function clearStoredSession() {
+  if (typeof window !== 'undefined') window.localStorage.removeItem(storageKey)
+}
+
 function saveSession(session: AuthSession | null) {
   if (typeof window === 'undefined') return
   if (session) window.localStorage.setItem(storageKey, JSON.stringify(session))
-  else window.localStorage.removeItem(storageKey)
+  else clearStoredSession()
 }
 
 export function readSession(): AuthSession | null {
@@ -39,6 +43,7 @@ export function readSession(): AuthSession | null {
     const raw = window.localStorage.getItem(storageKey)
     return raw ? (JSON.parse(raw) as AuthSession) : null
   } catch {
+    clearStoredSession()
     return null
   }
 }
