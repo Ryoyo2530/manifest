@@ -1,0 +1,7 @@
+name = "manifest-api"
+main = "workers/api/index.ts"
+compatibility_date = "2026-11-19"
+workers_dev = true
+
+[vars]
+ALLOWED_ORIGIN = "https://YOUR-MANIFEST-PAGES-DOMAIN"
