@@ -43,13 +43,29 @@ export function WishPage() {
     const nextTitle = title.trim()
     const nextDescription = description.trim()
     if (!nextTitle || !nextDescription) return
-    updateWish(wish!.id, { title: nextTitle, description: nextDescription, category })
-    setEditing(false)
+    setSaving(true)
+    setError('')
+    try {
+      await updateWish(wish!.id, { title: nextTitle, description: nextDescription, category })
+      setEditing(false)
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : 'The Wish could not be saved.')
+    } finally {
+      setSaving(false)
+    }
   }
 
-  function remove() {
-    deleteWish(wish!.id)
-    navigate('/manifest')
+  async function remove() {
+    setSaving(true)
+    setError('')
+    try {
+      await deleteWish(wish!.id)
+      navigate('/manifest')
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : 'The Wish could not be deleted.')
+    } finally {
+      setSaving(false)
+    }
   }
 
   return (
@@ -120,6 +136,8 @@ export function WishPage() {
       <Link to={`/wishes/${wish.id}/envision`} className="btn mt-10">
         Another vision
       </Link>
+
+      {error && <p role="alert" className="mt-4 text-sm text-red-700">{error}</p>}
 
       {error && <p role="alert" className="mt-4 text-sm text-red-700">{error}</p>}
 
