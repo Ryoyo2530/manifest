@@ -4,6 +4,10 @@ This Worker creates and reads durable Generation records. It does **not** call a
 
 ## Routes
 
+### `POST /api/wishes`
+
+Requires `Authorization: Bearer <Supabase access token>`. Accepts `{ "title": "...", "description": "...", "category": "Love & Relationships" }`, validates the five supported Wish categories, and creates a user-owned Wish. Returns `201` and the created Wish. The authenticated user ID is assigned by the Worker; the browser cannot choose an owner.
+
 ### `POST /api/generations`
 
 Requires `Authorization: Bearer <Supabase access token>`.

@@ -77,9 +77,15 @@ export function Ritual() {
         {lines[line]}
       </p>
       <p className="relative mt-5 max-w-sm text-sm leading-relaxed text-ink/60">
-        We’re shaping the creative direction for your wish. Your finished image, video, or audio
-        will appear here once generation is connected.
+        {generation.status === 'pending'
+          ? 'Your Wish and generation request are safely recorded. The media provider is not connected yet, so no image, video, or audio is being rendered at this stage.'
+          : 'We’re shaping the creative direction for your wish. Your finished image, video, or audio will appear here once generation is connected.'}
       </p>
+      {generation.status === 'pending' && (
+        <Link to={`/wishes/${generation.wishId}`} className="relative mt-8 text-sm text-plum underline decoration-gold/70 underline-offset-4">
+          Return to your wish
+        </Link>
+      )}
     </div>
   )
 }

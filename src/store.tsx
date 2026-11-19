@@ -49,11 +49,13 @@ type Created =
 
 type Envisioned = { ok: true; generation: Generation } | { ok: false; error: string }
 
+export type RemoteGenerationIds = { wishId?: string; generationId: string; status?: Generation['status'] }
+
 type StoreApi = {
   space: Space
   remaining: number
-  createWish: (input: WishInput) => Created
-  envision: (wishId: string, input: VisionInput) => Envisioned
+  createWish: (input: WishInput, remote?: RemoteGenerationIds) => Created
+  envision: (wishId: string, input: VisionInput, remote?: RemoteGenerationIds) => Envisioned
   updateWish: (
     id: string,
     patch: Partial<Pick<Wish, 'title' | 'description' | 'category'>>,
@@ -118,7 +120,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   }, [])
 
   const createWish = useCallback(
-    (input: WishInput): Created => {
+    (input: WishInput, remote?: RemoteGenerationIds): Created => {
       const current = spaceRef.current
       if (current.generations.length >= limits.freeGenerations) {
         return { ok: false, error: held }
@@ -126,7 +128,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       const now = new Date().toISOString()
       const description = input.description.trim()
       const wish: Wish = {
-        id: uid(),
+        id: remote?.wishId ?? uid(),
         title: input.title.trim() || interpret(input).title,
         description,
         category: input.category,
@@ -135,10 +137,10 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         updatedAt: now,
       }
       const generation: Generation = {
-        id: uid(),
+        id: remote?.generationId ?? uid(),
         wishId: wish.id,
         outputType: input.outputType,
-        status: 'processing',
+        status: remote?.status ?? (remote ? 'pending' : 'processing'),
         style: input.style,
         mood: input.mood,
         presence: input.presence,
@@ -164,7 +166,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   )
 
   const envision = useCallback(
-    (wishId: string, input: VisionInput): Envisioned => {
+    (wishId: string, input: VisionInput, remote?: RemoteGenerationIds): Envisioned => {
       const current = spaceRef.current
       const wish = current.wishes.find((item) => item.id === wishId)
       if (!wish) return { ok: false, error: 'That wish is no longer here.' }
@@ -173,10 +175,10 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       }
       const now = new Date().toISOString()
       const generation: Generation = {
-        id: uid(),
+        id: remote?.generationId ?? uid(),
         wishId: wish.id,
         outputType: input.outputType,
-        status: 'processing',
+        status: remote?.status ?? (remote ? 'pending' : 'processing'),
         style: input.style,
         mood: input.mood,
         presence: input.presence,
