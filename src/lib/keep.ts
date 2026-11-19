@@ -25,7 +25,7 @@ function slug(title: string) {
   return safe || 'manifestation'
 }
 
-/** A keepsake image. Real media replaces this; the gesture of keeping stays. */
+/** Download a concept card while real generated media is not connected. */
 export async function downloadKeepsake(concept: Concept, format: OutputType) {
   await document.fonts.ready
   const canvas = document.createElement('canvas')
@@ -59,7 +59,7 @@ export async function downloadKeepsake(concept: Concept, format: OutputType) {
   ctx.fillText('MANIFEST', 540, 220)
   ctx.font = '500 26px "DM Sans", sans-serif'
   ctx.globalAlpha = 0.7
-  ctx.fillText(format.toUpperCase(), 540, 270)
+  ctx.fillText(`CONCEPT PREVIEW · ${format.toUpperCase()}`, 540, 270)
   ctx.globalAlpha = 1
 
   ctx.font = '600 72px "Cormorant Garamond", Georgia, serif'
@@ -77,7 +77,7 @@ export async function downloadKeepsake(concept: Concept, format: OutputType) {
 
   const link = document.createElement('a')
   link.href = canvas.toDataURL('image/png')
-  link.download = `${slug(concept.title)}.png`
+  link.download = `${slug(concept.title)}-concept.png`
   link.click()
 }
 

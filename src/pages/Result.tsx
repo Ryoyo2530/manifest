@@ -42,7 +42,7 @@ export function Result() {
   async function onShare() {
     try {
       const outcome = await sharePiece(concept)
-      setNote(outcome === 'copied' ? 'Copied, so you can keep it close.' : 'Shared.')
+      setNote(outcome === 'copied' ? 'Affirmation copied, so you can keep it close.' : 'Shared.')
     } catch {
       setNote('It stayed here.')
     }
@@ -52,6 +52,13 @@ export function Result() {
     <Page width="max-w-xl">
       <p className="kicker">{wish.category}</p>
       <h1 className="mt-3 font-serif text-5xl leading-tight text-plum">{concept.title}</h1>
+      <div className="mt-5 border-y border-champagne py-4">
+        <p className="kicker">Concept preview</p>
+        <p className="mt-2 text-sm leading-relaxed text-ink/70">
+          This is the creative direction for your wish, not a finished media file. Real AI-generated
+          image, video, and audio will replace this preview when the generation service is connected.
+        </p>
+      </div>
 
       <div className={`mx-auto mt-8 ${generation.outputType === 'audio' ? 'aspect-[4/5] max-w-md' : 'aspect-[9/16] max-w-sm'}`}>
         <Vision
@@ -79,14 +86,14 @@ export function Result() {
           {generation.favorite ? 'Kept' : 'Keep'}
         </button>
         <button type="button" className="text-plum underline decoration-gold/70 underline-offset-4" onClick={onShare}>
-          Share
+          Share affirmation
         </button>
         <button
           type="button"
           className="text-plum underline decoration-gold/70 underline-offset-4"
           onClick={() => downloadKeepsake(concept, generation.outputType)}
         >
-          Download
+          Download concept card
         </button>
         <Link to={`/wishes/${wish.id}/envision`} className="text-plum underline decoration-gold/70 underline-offset-4">
           Another vision

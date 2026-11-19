@@ -32,7 +32,7 @@ export function Vision({
           onClick={onReveal}
           className="absolute left-1/2 top-[36%] -translate-x-1/2 -translate-y-1/2 rounded-full border border-current/40 px-5 py-2 text-xs uppercase tracking-[0.18em]"
         >
-          {format === 'video' ? 'Play' : 'Listen'}
+          Reveal affirmation
         </button>
       )}
       {showWords && affirmation && (
