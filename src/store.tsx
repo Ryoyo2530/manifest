@@ -2,6 +2,7 @@ import {
   createContext,
   useCallback,
   useContext,
+  useEffect,
   useMemo,
   useRef,
   useState,
@@ -58,11 +59,8 @@ type StoreApi = {
   remaining: number
   createWish: (input: WishInput, remote?: RemoteGenerationIds) => Created
   envision: (wishId: string, input: VisionInput, remote?: RemoteGenerationIds) => Envisioned
-  updateWish: (
-    id: string,
-    patch: Partial<Pick<Wish, 'title' | 'description' | 'category'>>,
-  ) => void
-  deleteWish: (id: string) => void
+  updateWish: (id: string, patch: Partial<Pick<Wish, 'title' | 'description' | 'category'>>) => Promise<void>
+  deleteWish: (id: string) => Promise<void>
   completeGeneration: (id: string) => void
   toggleFavorite: (id: string) => Promise<void>
   updateProfile: (patch: Partial<Profile>) => void
@@ -111,7 +109,9 @@ function persist(space: Space) {
 const held = 'This space is holding as many visions as it can for now.'
 
 export function StoreProvider({ children }: { children: ReactNode }) {
+  const auth = useAuth()
   const [space, setSpace] = useState(read)
+  const activeUser = useRef<string | null>(null)
   const spaceRef = useRef(space)
   spaceRef.current = space
 
@@ -121,7 +121,26 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     setSpace(next)
   }, [])
 
-  useEffect(() => {\n    if (auth.loading) return\n    const session = auth.session\n    const userId = session?.user.id ?? null\n    if (userId && activeUser.current !== userId) {\n      activeUser.current = userId\n      void loadRemoteSpace(session).then((remote) => {\n        if (activeUser.current === userId) replace({ ...emptySpace(), wishes: remote.wishes, generations: remote.generations })\n      }).catch(() => { if (activeUser.current === userId) replace(emptySpace()) })\n    } else if (!userId && activeUser.current) {\n      activeUser.current = null\n      replace(emptySpace())\n    }\n  }, [auth.loading, auth.session, replace])\n\n  const createWish = useCallback(
+  useEffect(() => {
+    if (auth.loading) return
+    const session = auth.session
+    const userId = session?.user.id ?? null
+    if (userId && activeUser.current !== userId) {
+      activeUser.current = userId
+      void loadRemoteSpace(session).then((remote) => {
+        if (activeUser.current === userId) {
+          replace({ ...emptySpace(), wishes: remote.wishes, generations: remote.generations })
+        }
+      }).catch(() => {
+        if (activeUser.current === userId) replace(emptySpace())
+      })
+    } else if (!userId && activeUser.current) {
+      activeUser.current = null
+      replace(emptySpace())
+    }
+  }, [auth.loading, auth.session, replace])
+
+  const createWish = useCallback(
     (input: WishInput, remote?: RemoteGenerationIds): Created => {
       const current = spaceRef.current
       if (current.generations.length >= limits.freeGenerations) {
@@ -211,30 +230,38 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   )
 
   const updateWish = useCallback(
-    (id: string, patch: Partial<Pick<Wish, 'title' | 'description' | 'category'>>) => {
+    async (id: string, patch: Partial<Pick<Wish, 'title' | 'description' | 'category'>>) => {
       const current = spaceRef.current
+      const existing = current.wishes.find((wish) => wish.id === id)
+      if (!existing) return
+      if (auth.session) {
+        await updateRemoteWish(auth.session, id, {
+          title: patch.title ?? existing.title,
+          description: patch.description ?? existing.description,
+          category: patch.category ?? existing.category,
+        })
+      }
       replace({
         ...current,
         wishes: current.wishes.map((wish) =>
-          wish.id === id
-            ? { ...wish, ...patch, updatedAt: new Date().toISOString() }
-            : wish,
+          wish.id === id ? { ...wish, ...patch, updatedAt: new Date().toISOString() } : wish,
         ),
       })
     },
-    [replace],
+    [replace, auth.session],
   )
 
   const deleteWish = useCallback(
-    (id: string) => {
+    async (id: string) => {
       const current = spaceRef.current
+      if (auth.session) await deleteRemoteWish(auth.session, id)
       replace({
         ...current,
         wishes: current.wishes.filter((wish) => wish.id !== id),
         generations: current.generations.filter((item) => item.wishId !== id),
       })
     },
-    [replace],
+    [replace, auth.session],
   )
 
   const completeGeneration = useCallback(
@@ -253,16 +280,20 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   )
 
   const toggleFavorite = useCallback(
-    (id: string) => {
+    async (id: string) => {
       const current = spaceRef.current
+      const generation = current.generations.find((item) => item.id === id)
+      if (!generation) return
+      const favorite = !generation.favorite
+      if (auth.session) await setRemoteFavorite(auth.session, id, favorite)
       replace({
         ...current,
         generations: current.generations.map((item) =>
-          item.id === id ? { ...item, favorite: !item.favorite } : item,
+          item.id === id ? { ...item, favorite } : item,
         ),
       })
     },
-    [replace],
+    [replace, auth.session],
   )
 
   const updateProfile = useCallback(
