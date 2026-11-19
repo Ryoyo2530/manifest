@@ -117,7 +117,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
 
   const replace = useCallback((next: Space) => {
     spaceRef.current = next
-    persist(next)
+    if (!auth.session) persist(next)
     setSpace(next)
   }, [])
 
@@ -125,7 +125,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     if (auth.loading) return
     const session = auth.session
     const userId = session?.user.id ?? null
-    if (userId && activeUser.current !== userId) {
+    if (session && userId && activeUser.current !== userId) {
       activeUser.current = userId
       void loadRemoteSpace(session).then((remote) => {
         if (activeUser.current === userId) {
@@ -136,7 +136,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       })
     } else if (!userId && activeUser.current) {
       activeUser.current = null
-      replace(emptySpace())
+      replace(read())
     }
   }, [auth.loading, auth.session, replace])
 
