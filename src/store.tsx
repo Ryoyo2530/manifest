@@ -21,6 +21,8 @@ import {
 } from './domain'
 import { limits } from './limits'
 import { buildPreviewCreativeBrief } from './creative/preview'
+import { useAuth } from './auth'
+import { loadRemoteSpace, updateRemoteWish, deleteRemoteWish, setRemoteFavorite } from './lib/generation-api'
 
 const KEY = 'manifest.space'
 
@@ -62,7 +64,7 @@ type StoreApi = {
   ) => void
   deleteWish: (id: string) => void
   completeGeneration: (id: string) => void
-  toggleFavorite: (id: string) => void
+  toggleFavorite: (id: string) => Promise<void>
   updateProfile: (patch: Partial<Profile>) => void
   clearSpace: () => void
 }
@@ -119,7 +121,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     setSpace(next)
   }, [])
 
-  const createWish = useCallback(
+  useEffect(() => {\n    if (auth.loading) return\n    const session = auth.session\n    const userId = session?.user.id ?? null\n    if (userId && activeUser.current !== userId) {\n      activeUser.current = userId\n      void loadRemoteSpace(session).then((remote) => {\n        if (activeUser.current === userId) replace({ ...emptySpace(), wishes: remote.wishes, generations: remote.generations })\n      }).catch(() => { if (activeUser.current === userId) replace(emptySpace()) })\n    } else if (!userId && activeUser.current) {\n      activeUser.current = null\n      replace(emptySpace())\n    }\n  }, [auth.loading, auth.session, replace])\n\n  const createWish = useCallback(
     (input: WishInput, remote?: RemoteGenerationIds): Created => {
       const current = spaceRef.current
       if (current.generations.length >= limits.freeGenerations) {

@@ -12,7 +12,7 @@ export function WishPage() {
   const wish = space.wishes.find((item) => item.id === id)
   const pieces = space.generations.filter((item) => item.wishId === id)
   const [editing, setEditing] = useState(false)
-  const [confirming, setConfirming] = useState(false)
+  const [confirming, setConfirming] = useState(false)\n  const [saving, setSaving] = useState(false)\n  const [error, setError] = useState('')
   const [title, setTitle] = useState(wish?.title ?? '')
   const [description, setDescription] = useState(wish?.description ?? '')
   const [category, setCategory] = useState<Category>(wish?.category ?? 'Other')
@@ -37,7 +37,7 @@ export function WishPage() {
     )
   }
 
-  function save() {
+  async function save() {
     const nextTitle = title.trim()
     const nextDescription = description.trim()
     if (!nextTitle || !nextDescription) return
@@ -80,7 +80,7 @@ export function WishPage() {
             ))}
           </div>
           <div className="flex gap-3">
-            <button type="button" className="btn" onClick={save}>
+            <button type="button" className="btn" onClick={() => void save()} disabled={saving}>
               Save the wish
             </button>
             <button type="button" className="btn-ghost" onClick={() => setEditing(false)}>
@@ -103,7 +103,7 @@ export function WishPage() {
               Edit
             </button>
             {confirming ? (
-              <button type="button" className="text-plum underline decoration-gold/70 underline-offset-4" onClick={remove}>
+              <button type="button" className="text-plum underline decoration-gold/70 underline-offset-4" onClick={() => void remove()} disabled={saving}>
                 Yes, let it go
               </button>
             ) : (
@@ -119,7 +119,7 @@ export function WishPage() {
         Another vision
       </Link>
 
-      <section className="mt-14">
+      {error && <p role="alert" className="mt-4 text-sm text-red-700">{error}</p>}\n\n      <section className="mt-14">
         {pieces.length === 0 ? (
           <p className="font-serif text-2xl italic text-ink/60">No visions yet.</p>
         ) : (

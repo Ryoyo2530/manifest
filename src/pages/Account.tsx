@@ -140,7 +140,7 @@ export function Account() {
           <button type="button" className="btn-ghost mt-6" onClick={() => setConfirming(true)}>Erase this space</button>
         )}
       </div>
-      <p className="mt-8 text-xs text-ink/45">Your local prototype data is not yet synchronized with your account. <Link to="/manifest" className="underline underline-offset-4">Return to My Manifest</Link>.</p>
+      <p className="mt-8 text-xs text-ink/45">{auth.session ? 'Your Wishes and saved visions are synchronized with your account.' : 'Your signed-out prototype space is kept on this device.'} <Link to="/manifest" className="underline underline-offset-4">Return to My Manifest</Link>.</p>
     </Page>
   )
 }

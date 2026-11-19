@@ -29,7 +29,7 @@ function response(request: Request, env: Env, body: unknown, status = 200) {
   const origin = request.headers.get('Origin')
   const headers = new Headers(jsonHeaders)
   if (origin === env.ALLOWED_ORIGIN) headers.set('Access-Control-Allow-Origin', origin)
-  headers.set('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
+  headers.set('Access-Control-Allow-Methods', 'GET, POST, PATCH, DELETE, OPTIONS')
   headers.set('Access-Control-Allow-Headers', 'Authorization, Content-Type, Idempotency-Key')
   headers.set('Vary', 'Origin')
   headers.set('Cache-Control', 'no-store')
@@ -125,6 +125,15 @@ async function handle(request: Request, env: Env): Promise<Response> {
   const user = await authenticate(env, token)
   if (!user) return response(request, env, { error: 'unauthorized', message: 'Your session is invalid or expired.' }, 401)
 
+  if (request.method === 'GET' && url.pathname === '/api/space') {
+    const [wishes, generations, favorites] = await Promise.all([
+      supabase<Record<string, unknown>[]>(env, 'wishes?select=*&order=created_at.desc', token),
+      supabase<Record<string, unknown>[]>(env, 'generations?select=*&order=created_at.desc', token),
+      supabase<{ generation_id: string }[]>(env, 'favorites?select=generation_id', token),
+    ])
+    if (!wishes.ok || !generations.ok || !favorites.ok) return response(request, env, { error: 'database_error', message: 'Could not load your Manifest space.' }, 502)
+    return response(request, env, { wishes: wishes.data ?? [], generations: generations.data ?? [], favorites: favorites.data ?? [] })
+  }
   if (request.method === 'POST' && url.pathname === '/api/wishes') {
     const contentLength = Number(request.headers.get('Content-Length') || 0)
     if (contentLength > 16384) return response(request, env, { error: 'payload_too_large', message: 'Wish input exceeds the 16 KB limit.' }, 413)
@@ -142,6 +151,38 @@ async function handle(request: Request, env: Env): Promise<Response> {
     return response(request, env, { wish: created.data[0] }, 201)
   }
 
+  const wishMatch = url.pathname.match(/^\/api\/wishes\/([0-9a-f-]{36})$/i)
+  if (wishMatch && request.method === 'PATCH') {
+    let body: unknown
+    try { body = await request.json() } catch { return response(request, env, { error: 'invalid_json', message: 'Request body must be valid JSON.' }, 400) }
+    if (!validWish(body)) return response(request, env, { error: 'invalid_request', message: 'Wish title, description, or category is invalid.' }, 400)
+    const updated = await supabase<Record<string, unknown>[]>(env, `wishes?id=eq.${encodeURIComponent(wishMatch[1])}&select=*`, token, {
+      method: 'PATCH', headers: { Prefer: 'return=representation' },
+      body: JSON.stringify({ title: body.title.trim(), description: body.description.trim(), category: body.category }),
+    })
+    if (!updated.ok) return response(request, env, { error: 'wish_update_failed', message: 'The Wish could not be updated.' }, 502)
+    if (!updated.data?.[0]) return response(request, env, { error: 'wish_not_found', message: 'This Wish does not exist in your space.' }, 404)
+    return response(request, env, { wish: updated.data[0] })
+  }
+  if (wishMatch && request.method === 'DELETE') {
+    const removed = await supabase<unknown>(env, `wishes?id=eq.${encodeURIComponent(wishMatch[1])}`, token, { method: 'DELETE' })
+    if (!removed.ok) return response(request, env, { error: 'wish_delete_failed', message: 'The Wish could not be deleted.' }, 502)
+    return response(request, env, { deleted: true })
+  }
+  const favoriteMatch = url.pathname.match(/^\/api\/favorites\/([0-9a-f-]{36})$/i)
+  if (favoriteMatch && request.method === 'POST') {
+    const saved = await supabase<Record<string, unknown>[]>(env, 'favorites?select=*', token, {
+      method: 'POST', headers: { Prefer: 'return=representation,resolution=ignore-duplicates' },
+      body: JSON.stringify({ user_id: user.id, generation_id: favoriteMatch[1] }),
+    })
+    if (!saved.ok) return response(request, env, { error: 'favorite_save_failed', message: 'This vision could not be kept.' }, 502)
+    return response(request, env, { favorite: true })
+  }
+  if (favoriteMatch && request.method === 'DELETE') {
+    const removed = await supabase<unknown>(env, `favorites?generation_id=eq.${encodeURIComponent(favoriteMatch[1])}`, token, { method: 'DELETE' })
+    if (!removed.ok) return response(request, env, { error: 'favorite_remove_failed', message: 'This vision could not be removed from Keeps.' }, 502)
+    return response(request, env, { favorite: false })
+  }
   if (request.method === 'POST' && url.pathname === '/api/generations') {
     const contentLength = Number(request.headers.get('Content-Length') || 0)
     if (contentLength > 65536) return response(request, env, { error: 'payload_too_large', message: 'Generation input exceeds the 64 KB limit.' }, 413)
