@@ -13,6 +13,7 @@ export function Result() {
   const wish = space.wishes.find((item) => item.id === generation?.wishId)
   const [revealed, setRevealed] = useState(false)
   const [note, setNote] = useState('')
+  const [favoriteBusy, setFavoriteBusy] = useState(false)
 
   useEffect(() => {
     if (generation?.status === 'processing') {
@@ -82,7 +83,7 @@ export function Result() {
       {presenceLine && <p className="mt-3 text-center text-sm text-ink/60">{presenceLine}</p>}
 
       <div className="mt-10 flex flex-wrap items-center justify-center gap-x-6 gap-y-3 text-sm">
-        <button type="button" className="text-plum underline decoration-gold/70 underline-offset-4" onClick={() => toggleFavorite(generation.id)}>
+        <button type="button" className="text-plum underline decoration-gold/70 underline-offset-4" onClick={() => { setFavoriteBusy(true); void toggleFavorite(generation.id).catch(() => setNote('This vision could not be saved just yet.')).finally(() => setFavoriteBusy(false)) }} disabled={favoriteBusy}>
           {generation.favorite ? 'Kept' : 'Keep'}
         </button>
         <button type="button" className="text-plum underline decoration-gold/70 underline-offset-4" onClick={onShare}>

@@ -4,9 +4,21 @@ This Worker creates and reads durable Generation records. It does **not** call a
 
 ## Routes
 
+### `GET /api/space`
+
+Returns the authenticated user's Wishes, Generations, and saved generation IDs.
+
 ### `POST /api/wishes`
 
 Requires `Authorization: Bearer <Supabase access token>`. Accepts `{ "title": "...", "description": "...", "category": "Love & Relationships" }`, validates the five supported Wish categories, and creates a user-owned Wish. Returns `201` and the created Wish. The authenticated user ID is assigned by the Worker; the browser cannot choose an owner.
+
+### `PATCH /api/wishes/:id` and `DELETE /api/wishes/:id`
+
+Update or delete a Wish visible to the caller under RLS. Deleting a Wish cascades to its generations and related favorites.
+
+### `POST /api/favorites/:generationId` and `DELETE /api/favorites/:generationId`
+
+Add or remove a generation from the caller's Keeps.
 
 ### `POST /api/generations`
 
