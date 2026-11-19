@@ -20,6 +20,7 @@ import {
   type Wish,
 } from './domain'
 import { limits } from './limits'
+import { buildPreviewCreativeBrief } from './creative/preview'
 
 const KEY = 'manifest.space'
 
@@ -142,6 +143,13 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         mood: input.mood,
         presence: input.presence,
         concept: interpret({ ...input, title: wish.title, description }),
+        creativeBrief: buildPreviewCreativeBrief({
+          wish: { title: wish.title, description, category: wish.category },
+          outputType: input.outputType,
+          style: input.style,
+          mood: input.mood,
+          presence: input.presence,
+        }),
         favorite: false,
         createdAt: now,
       }
@@ -178,6 +186,13 @@ export function StoreProvider({ children }: { children: ReactNode }) {
           style: input.style,
           mood: input.mood,
           title: wish.title,
+        }),
+        creativeBrief: buildPreviewCreativeBrief({
+          wish: { title: wish.title, description: wish.description, category: wish.category },
+          outputType: input.outputType,
+          style: input.style,
+          mood: input.mood,
+          presence: input.presence,
         }),
         favorite: false,
         createdAt: now,
