@@ -16,6 +16,9 @@ import {
   type Style,
 } from '../domain'
 import { useStore } from '../store'
+import { useAuth } from '../auth'
+import { buildPreviewCreativeBrief } from '../creative/preview'
+import { createRemoteGeneration, createRemoteWish } from '../lib/generation-api'
 
 function isCategory(value: string | null): value is Category {
   return categories.includes(value as Category)
@@ -26,6 +29,8 @@ export function Compose() {
   const [params] = useSearchParams()
   const navigate = useNavigate()
   const store = useStore()
+  const auth = useAuth()
+  const [busy, setBusy] = useState(false)
   const existing = id ? store.space.wishes.find((wish) => wish.id === id) : undefined
 
   const seededWish = params.get('wish') ?? ''
@@ -64,10 +69,22 @@ export function Compose() {
     if (!categoryTouched) setCategory(guessCategory(value))
   }
 
-  function onSubmit(event: FormEvent) {
+  async function onSubmit(event: FormEvent) {
     event.preventDefault()
+    if (busy) return
+    setBusy(true)
+    setError('')
+    try {
     const feeling = { outputType, style, mood, presence }
     if (existing) {
+      if (auth.session) {
+        const creativeBrief = buildPreviewCreativeBrief({ wish: { title: existing.title, description: existing.description, category: existing.category }, ...feeling })
+        const remote = await createRemoteGeneration(auth.session, { wishId: existing.id, ...feeling, creativeBrief })
+        const result = store.envision(existing.id, feeling, { generationId: remote.id, status: remote.status })
+        if (!result.ok) { setError(result.error); return }
+        navigate(`/generating/${result.generation.id}`)
+        return
+      }
       const result = store.envision(existing.id, feeling)
       if (!result.ok) {
         setError(result.error)
@@ -82,17 +99,27 @@ export function Compose() {
       setError('Write the wish first. A sentence is enough.')
       return
     }
-    const result = store.createWish({
-      ...feeling,
-      description: text,
-      category,
-      title: title.trim() || suggestion,
-    })
+    const wishInput = { ...feeling, description: text, category, title: title.trim() || suggestion }
+    if (auth.session) {
+      const remoteWish = await createRemoteWish(auth.session, { title: wishInput.title, description: wishInput.description, category: wishInput.category })
+      const creativeBrief = buildPreviewCreativeBrief({ wish: { title: wishInput.title, description: wishInput.description, category: wishInput.category }, ...feeling })
+      const remoteGeneration = await createRemoteGeneration(auth.session, { wishId: remoteWish.id, ...feeling, creativeBrief })
+      const result = store.createWish(wishInput, { wishId: remoteWish.id, generationId: remoteGeneration.id, status: remoteGeneration.status })
+      if (!result.ok) { setError(result.error); return }
+      navigate(`/generating/${result.generation.id}`)
+      return
+    }
+    const result = store.createWish(wishInput)
     if (!result.ok) {
       setError(result.error)
       return
     }
     navigate(`/generating/${result.generation.id}`)
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : 'Your Wish could not be sent just yet.')
+    } finally {
+      setBusy(false)
+    }
   }
 
   return (
@@ -102,7 +129,7 @@ export function Compose() {
         {existing ? existing.title : 'What do you want to bring into your life?'}
       </h1>
 
-      <form onSubmit={onSubmit} className="mt-10 space-y-12">
+      <form onSubmit={(event) => void onSubmit(event)} className="mt-10 space-y-12">
         {existing ? (
           <blockquote className="border-l border-gold pl-5 font-serif text-2xl italic leading-snug text-ink/80">
             {existing.description}
@@ -239,7 +266,7 @@ export function Compose() {
             </p>
           )}
           {error && <p className="text-sm text-plum">{error}</p>}
-          <button className="btn" type="submit" disabled={store.remaining === 0}>
+          <button className="btn" type="submit" disabled={store.remaining === 0 || busy}>
             Bring It to Life
           </button>
         </div>

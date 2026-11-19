@@ -94,6 +94,16 @@ function validBody(value: unknown): value is CreateGenerationBody {
     && value.idempotency_key.length <= 128
 }
 
+type CreateWishBody = { title: string; description: string; category: string }
+
+function validWish(value: unknown): value is CreateWishBody {
+  if (!isRecord(value)) return false
+  const categories = ['Love & Relationships', 'Career & Abundance', 'Wellbeing & Growth', 'Lifestyle & Adventure', 'Other']
+  return typeof value.title === 'string' && value.title.trim().length > 0 && value.title.length <= 120
+    && typeof value.description === 'string' && value.description.trim().length > 0 && value.description.length <= 4000
+    && categories.includes(value.category as string)
+}
+
 async function handle(request: Request, env: Env): Promise<Response> {
   if (request.method === 'OPTIONS') {
     if (request.headers.get('Origin') !== env.ALLOWED_ORIGIN) return new Response(null, { status: 403 })
@@ -114,6 +124,23 @@ async function handle(request: Request, env: Env): Promise<Response> {
 
   const user = await authenticate(env, token)
   if (!user) return response(request, env, { error: 'unauthorized', message: 'Your session is invalid or expired.' }, 401)
+
+  if (request.method === 'POST' && url.pathname === '/api/wishes') {
+    const contentLength = Number(request.headers.get('Content-Length') || 0)
+    if (contentLength > 16384) return response(request, env, { error: 'payload_too_large', message: 'Wish input exceeds the 16 KB limit.' }, 413)
+    let body: unknown
+    try { body = await request.json() } catch {
+      return response(request, env, { error: 'invalid_json', message: 'Request body must be valid JSON.' }, 400)
+    }
+    if (!validWish(body)) return response(request, env, { error: 'invalid_request', message: 'Wish title, description, or category is invalid.' }, 400)
+    const created = await supabase<Record<string, unknown>[]>(env, 'wishes?select=*', token, {
+      method: 'POST',
+      headers: { Prefer: 'return=representation' },
+      body: JSON.stringify({ title: body.title.trim(), description: body.description.trim(), category: body.category, status: 'active' }),
+    })
+    if (!created.ok || !created.data?.[0]) return response(request, env, { error: 'wish_create_failed', message: 'The Wish could not be saved.' }, created.status >= 400 ? created.status : 502)
+    return response(request, env, { wish: created.data[0] }, 201)
+  }
 
   if (request.method === 'POST' && url.pathname === '/api/generations') {
     const contentLength = Number(request.headers.get('Content-Length') || 0)
