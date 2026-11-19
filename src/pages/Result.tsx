@@ -24,8 +24,10 @@ export function Result() {
     if (generation?.status === 'completed' && generation.outputType === 'image' && auth.session) {
       void fetchRemoteGenerationImage(auth.session, generation.id).then((url) => { if (active) setGeneratedImage(url); else URL.revokeObjectURL(url) }).catch(() => undefined)
     }
-    return () => { active = false; if (generatedImage) URL.revokeObjectURL(generatedImage) }
+    return () => { active = false }
   }, [generation?.id, generation?.status, auth.session])
+
+  useEffect(() => () => { if (generatedImage) URL.revokeObjectURL(generatedImage) }, [generatedImage])
 
   useEffect(() => {
     if (generation?.status === 'processing' || generation?.status === 'pending') {
@@ -68,7 +70,7 @@ export function Result() {
       <div className="mt-5 border-y border-champagne py-4">
         <p className="kicker">Concept preview</p>
         <p className="mt-2 text-sm leading-relaxed text-ink/70">
-          Your generated image is ready. This is a visual expression of the creative direction for your wish.
+          {generatedImage ? 'Your image is ready.' : 'This is the creative direction for your wish. Your generated image will appear here when it is ready.'}
         </p>
       </div>
 

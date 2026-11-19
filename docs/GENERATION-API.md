@@ -62,16 +62,18 @@ npx wrangler deploy
 
 Do not set a Supabase service-role key. The Worker forwards the user's access token to PostgREST, so Supabase RLS enforces ownership. The next increment will connect the frontend to these endpoints and add a real provider/queue adapter; until then the existing local concept-preview flow remains unchanged.
 
-
 ## OpenRouter image generation
 
-The Worker uses OpenRouter's dedicated Images API. The default model is `bytedance-seed/seedream-4.5`; developers can override it with the Worker variable `OPENROUTER_IMAGE_MODEL`. Set `OPENROUTER_API_KEY` as a Cloudflare Worker secret.
+The Worker uses OpenRouter's dedicated Images API (`POST https://openrouter.ai/api/v1/images`). The default model is `bytedance-seed/seedream-4.5`; developers can override it with the Worker variable `OPENROUTER_IMAGE_MODEL`. Set `OPENROUTER_API_KEY` as a Cloudflare Worker secret.
 
-Accepted image generations run in the Worker background. Generated image bytes are stored in a private R2 bucket and indexed in `media_assets`. The authenticated media route streams the image only after verifying ownership through Supabase RLS.
+Image jobs are submitted to a Cloudflare Queue and processed by its consumer, rather than keeping the API request open. The consumer stores generated image bytes in the private R2 bucket and indexes them in `media_assets`. The authenticated media route verifies ownership through Supabase RLS before streaming the file. The queue message contains the caller's short-lived Supabase access token so the consumer can retain the user's RLS context; the queue must remain private and must not be logged or exposed.
 
-Create an R2 bucket named `manifest-media` to match `wrangler.toml`, then configure the secret:
+Create the R2 bucket and queues before deploying:
 
 ```bash
+npx wrangler r2 bucket create manifest-media
+npx wrangler queues create manifest-generation
+npx wrangler queues create manifest-generation-dlq
 npx wrangler secret put OPENROUTER_API_KEY
 ```
 

@@ -9,3 +9,14 @@ ALLOWED_ORIGIN = "https://YOUR-MANIFEST-PAGES-DOMAIN"
 [[r2_buckets]]
 binding = "MEDIA_BUCKET"
 bucket_name = "manifest-media"
+
+[[queues.producers]]
+binding = "GENERATION_QUEUE"
+queue = "manifest-generation"
+
+[[queues.consumers]]
+queue = "manifest-generation"
+max_batch_size = 1
+max_batch_timeout = 5
+max_retries = 3
+dead_letter_queue = "manifest-generation-dlq"
