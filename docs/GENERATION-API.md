@@ -61,3 +61,18 @@ npx wrangler deploy
 ```
 
 Do not set a Supabase service-role key. The Worker forwards the user's access token to PostgREST, so Supabase RLS enforces ownership. The next increment will connect the frontend to these endpoints and add a real provider/queue adapter; until then the existing local concept-preview flow remains unchanged.
+
+
+## OpenRouter image generation
+
+The Worker uses OpenRouter's dedicated Images API. The default model is `bytedance-seed/seedream-4.5`; developers can override it with the Worker variable `OPENROUTER_IMAGE_MODEL`. Set `OPENROUTER_API_KEY` as a Cloudflare Worker secret.
+
+Accepted image generations run in the Worker background. Generated image bytes are stored in a private R2 bucket and indexed in `media_assets`. The authenticated media route streams the image only after verifying ownership through Supabase RLS.
+
+Create an R2 bucket named `manifest-media` to match `wrangler.toml`, then configure the secret:
+
+```bash
+npx wrangler secret put OPENROUTER_API_KEY
+```
+
+The first provider increment supports image output only. Video and audio return an explicit `501 modality_not_enabled` response and do not create pending jobs. Provider/model selection remains server-side and is never exposed in the browser.

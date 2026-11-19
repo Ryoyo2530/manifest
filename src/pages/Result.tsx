@@ -1,4 +1,6 @@
 import { useEffect, useState } from 'react'
+import { useAuth } from '../auth'
+import { fetchRemoteGenerationImage } from '../lib/generation-api'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { Page } from '../components/Page'
 import { Vision } from '../components/Vision'
@@ -9,6 +11,8 @@ export function Result() {
   const { id = '' } = useParams()
   const navigate = useNavigate()
   const { space, toggleFavorite } = useStore()
+  const auth = useAuth()
+  const [generatedImage, setGeneratedImage] = useState('')
   const generation = space.generations.find((item) => item.id === id)
   const wish = space.wishes.find((item) => item.id === generation?.wishId)
   const [revealed, setRevealed] = useState(false)
@@ -16,7 +20,15 @@ export function Result() {
   const [favoriteBusy, setFavoriteBusy] = useState(false)
 
   useEffect(() => {
-    if (generation?.status === 'processing') {
+    let active = true
+    if (generation?.status === 'completed' && generation.outputType === 'image' && auth.session) {
+      void fetchRemoteGenerationImage(auth.session, generation.id).then((url) => { if (active) setGeneratedImage(url); else URL.revokeObjectURL(url) }).catch(() => undefined)
+    }
+    return () => { active = false; if (generatedImage) URL.revokeObjectURL(generatedImage) }
+  }, [generation?.id, generation?.status, auth.session])
+
+  useEffect(() => {
+    if (generation?.status === 'processing' || generation?.status === 'pending') {
       navigate(`/generating/${generation.id}`, { replace: true })
     }
   }, [generation, navigate])
@@ -56,11 +68,11 @@ export function Result() {
       <div className="mt-5 border-y border-champagne py-4">
         <p className="kicker">Concept preview</p>
         <p className="mt-2 text-sm leading-relaxed text-ink/70">
-          This is the creative direction for your wish, not a finished media file. Real AI-generated
-          image, video, and audio will replace this preview when the generation service is connected.
+          Your generated image is ready. This is a visual expression of the creative direction for your wish.
         </p>
       </div>
 
+      {generatedImage ? <img src={generatedImage} alt={concept.title} className="mx-auto mt-8 max-h-[75vh] w-full rounded-2xl object-contain shadow-xl" /> : (
       <div className={`mx-auto mt-8 ${generation.outputType === 'audio' ? 'aspect-[4/5] max-w-md' : 'aspect-[9/16] max-w-sm'}`}>
         <Vision
           palette={concept.palette}
@@ -70,6 +82,7 @@ export function Result() {
           onReveal={() => setRevealed(true)}
         />
       </div>
+      )}
 
       {generation.outputType === 'image' && (
         <p className="mt-8 text-center font-serif text-2xl italic leading-snug text-plum">

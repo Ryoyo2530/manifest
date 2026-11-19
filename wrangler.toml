@@ -5,3 +5,7 @@ workers_dev = true
 
 [vars]
 ALLOWED_ORIGIN = "https://YOUR-MANIFEST-PAGES-DOMAIN"
+
+[[r2_buckets]]
+binding = "MEDIA_BUCKET"
+bucket_name = "manifest-media"

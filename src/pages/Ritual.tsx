@@ -13,7 +13,7 @@ const lines = [
 export function Ritual() {
   const { id = '' } = useParams()
   const navigate = useNavigate()
-  const { space, completeGeneration } = useStore()
+  const { space, refreshGeneration } = useStore()
   const generation = space.generations.find((item) => item.id === id)
   const generationId = generation?.id
   const status = generation?.status
@@ -21,25 +21,12 @@ export function Ritual() {
 
   useEffect(() => {
     if (!generationId) return
-    if (status === 'completed') {
-      navigate(`/generations/${generationId}`, { replace: true })
-      return
-    }
-    if (status !== 'processing') return
-
-    const beats = lines.map((_, index) =>
-      window.setTimeout(() => setLine(index), index * 1200),
-    )
-    const done = window.setTimeout(() => {
-      completeGeneration(generationId)
-      navigate(`/generations/${generationId}`, { replace: true })
-    }, 5200)
-
-    return () => {
-      beats.forEach((beat) => window.clearTimeout(beat))
-      window.clearTimeout(done)
-    }
-  }, [generationId, status, completeGeneration, navigate])
+    if (status === 'completed') { navigate('/generations/' + generationId, { replace: true }); return }
+    if (status === 'failed') return
+    const beats = lines.map((_, index) => window.setTimeout(() => setLine(index), index * 1200))
+    const poll = window.setInterval(() => { void refreshGeneration(generationId).catch(() => undefined) }, 3500)
+    return () => { beats.forEach((beat) => window.clearTimeout(beat)); window.clearInterval(poll) }
+  }, [generationId, status, refreshGeneration, navigate])
 
   if (!generation) {
     return (
@@ -72,14 +59,14 @@ export function Ritual() {
         <div className="absolute bottom-10 right-10 h-56 w-56 rounded-full bg-lavender/50 blur-3xl" />
       </div>
       <Halo className="drift relative h-56 w-56 text-gold/80" />
-      <p className="kicker relative mt-10">Concept preview</p>
+      <p className="kicker relative mt-10">Your vision is forming</p>
       <p className="rise relative mt-4 max-w-md font-serif text-3xl italic leading-snug text-plum md:text-4xl" aria-live="polite">
         {lines[line]}
       </p>
       <p className="relative mt-5 max-w-sm text-sm leading-relaxed text-ink/60">
         {generation.status === 'pending'
-          ? 'Your Wish and generation request are safely recorded. The media provider is not connected yet, so no image, video, or audio is being rendered at this stage.'
-          : 'We’re shaping the creative direction for your wish. Your finished image, video, or audio will appear here once generation is connected.'}
+          ? 'Your image is being created. This may take a little while; stay here while it comes to life.'
+          : 'Your image is being created and will appear here as soon as it is ready.'}
       </p>
       {generation.status === 'pending' && (
         <Link to={`/wishes/${generation.wishId}`} className="relative mt-8 text-sm text-plum underline decoration-gold/70 underline-offset-4">

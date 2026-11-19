@@ -23,7 +23,7 @@ import {
 import { limits } from './limits'
 import { buildPreviewCreativeBrief } from './creative/preview'
 import { useAuth } from './auth'
-import { loadRemoteSpace, updateRemoteWish, deleteRemoteWish, setRemoteFavorite } from './lib/generation-api'
+import { loadRemoteSpace, updateRemoteWish, deleteRemoteWish, setRemoteFavorite, refreshRemoteGeneration } from './lib/generation-api'
 
 const KEY = 'manifest.space'
 
@@ -62,6 +62,7 @@ type StoreApi = {
   updateWish: (id: string, patch: Partial<Pick<Wish, 'title' | 'description' | 'category'>>) => Promise<void>
   deleteWish: (id: string) => Promise<void>
   completeGeneration: (id: string) => void
+  refreshGeneration: (id: string) => Promise<void>
   toggleFavorite: (id: string) => Promise<void>
   updateProfile: (patch: Partial<Profile>) => void
   clearSpace: () => void
@@ -279,6 +280,13 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     [replace],
   )
 
+  const refreshGeneration = useCallback(async (id: string) => {
+    if (!auth.session) return
+    const remote = await refreshRemoteGeneration(auth.session, id)
+    const current = spaceRef.current
+    replace({ ...current, generations: current.generations.map((item) => item.id === id ? { ...item, status: remote.status, errorMessage: remote.error_message ?? undefined, completedAt: remote.status === 'completed' ? new Date().toISOString() : item.completedAt } : item) })
+  }, [auth.session, replace])
+
   const toggleFavorite = useCallback(
     async (id: string) => {
       const current = spaceRef.current
@@ -318,6 +326,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       updateWish,
       deleteWish,
       completeGeneration,
+      refreshGeneration,
       toggleFavorite,
       updateProfile,
       clearSpace,
