@@ -144,7 +144,7 @@ const affirmations: Record<Category, string> = {
   Other: 'What I long for has a place here, and so do I.',
 }
 
-const styleLine:const styleLine: Record<Style, string> = {
+const styleLine: Record<Style, string> = {
   Cinematic: 'Filmic light, a wide and steady frame.',
   Dreamy: 'Soft focus, as if remembered rather than recorded.',
   Luxury: 'Polished materials, nothing hurried.',
@@ -167,7 +167,7 @@ const categoryHints: [RegExp, Category][] = [
   [/travel|journey|abroad|around the world|flight|paris|apartment|lifestyle|live in|adventure/i, 'Lifestyle & Adventure'],
 ]
 
-const dayLines =const dayLines = [
+const dayLines = [
   'What you return to becomes familiar.',
   'A wish grows clearer each time you look at it.',
   'You do not have to rush the life you are imagining.',
