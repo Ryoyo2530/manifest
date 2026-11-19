@@ -338,6 +338,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       updateWish,
       deleteWish,
       completeGeneration,
+      refreshGeneration,
       toggleFavorite,
       updateProfile,
       clearSpace,
